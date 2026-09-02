@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-09-02T09:15:21+09:00",
+  "source": "Yahoo!路線情報 (transit.yahoo.co.jp/diainfo)",
+  "note": "一次情報は各鉄道会社の公式サイト。本データは目安です。",
+  "lines": {
+    "tohoku": {
+      "name": "東北新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/1/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "hokkaido": {
+      "name": "北海道新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/637/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "akita": {
+      "name": "秋田新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/6/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "yamagata": {
+      "name": "山形新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/5/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "joetsu": {
+      "name": "上越新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/3/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "hokuriku": {
+      "name": "北陸新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/624/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "tokaido": {
+      "name": "東海道新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/7/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    },
+    "sanyo": {
+      "name": "山陽新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/8/0",
+      "level": "trouble",
+      "label": "運転変更・一部運休",
+      "text": "地震災害の影響で、下り線(博多方面行)の一部列車に運転変更が出ています。（9月2日 5時0分掲載）",
+      "updated": "9月2日 9時14分更新"
+    },
+    "kyushu": {
+      "name": "九州新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/410/0",
+      "level": "suspend",
+      "label": "運転見合わせ",
+      "text": "地震災害の影響で、熊本〜新水俣駅間の運転を見合わせています。新水俣〜鹿児島中央駅間は臨時ダイヤでの運転となっています。9月18日に運転を再開する見込みです。（9月2日 5時0分掲載）",
+      "updated": "9月2日 9時14分更新"
+    },
+    "nishikyushu": {
+      "name": "西九州新幹線",
+      "url": "https://transit.yahoo.co.jp/diainfo/640/0",
+      "level": "normal",
+      "label": "平常運転",
+      "text": "現在､事故･遅延に関する情報はありません。",
+      "updated": "9月2日 9時14分更新"
+    }
+  }
+}

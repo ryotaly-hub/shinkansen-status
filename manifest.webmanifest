@@ -1,0 +1,14 @@
+{
+  "name": "新幹線 運行状況チェッカー",
+  "short_name": "新幹線運行",
+  "description": "出発駅から目的の駅までの新幹線の運行状況をまとめて確認",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fa",
+  "theme_color": "#0b3d91",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,8 @@
+# scratch / local
+_*.html
+_*.txt
+d.txt
+dom_out.txt
+__pycache__/
+*.pyc
+.DS_Store
