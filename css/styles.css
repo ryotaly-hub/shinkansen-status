@@ -60,13 +60,19 @@ body {
   padding: 16px; display: grid; gap: 10px;
   grid-template-columns: 1fr auto 1fr; align-items: end;
 }
-.route-form .field { display: flex; flex-direction: column; gap: 4px; }
+.route-form .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .route-form label { font-size: .78rem; color: var(--muted); font-weight: 600; }
-.route-form input {
+.route-form input,
+.route-form select {
   padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
-  font-size: 1rem; background: #fbfcfe;
+  font-size: 1rem; background: #fbfcfe; width: 100%; color: var(--ink);
 }
-.route-form input:focus { outline: 2px solid var(--navy); border-color: transparent; }
+.route-form input:focus,
+.route-form select:focus { outline: 2px solid var(--navy); border-color: transparent; }
+.row-when {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: 88px 1fr 1fr; gap: 10px;
+}
 .swap-btn {
   border: 1px solid var(--line); background: #fff; border-radius: 10px;
   width: 40px; height: 42px; font-size: 1.1rem; cursor: pointer; color: var(--navy);
@@ -169,7 +175,33 @@ body {
 .mini-btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 
+/* 乗換の目安 */
+.itinerary {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
+}
+.itinerary h3 { margin: 0 0 4px; font-size: 1rem; }
+.itin-note { margin: 0 0 10px; font-size: .76rem; color: var(--muted); }
+.itin-list { list-style: none; margin: 0; padding: 0; }
+.itin-row { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: start; }
+.itin-time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: .9rem; padding-top: 1px; }
+.itin-place { font-weight: 700; font-size: .95rem; }
+.itin-leg {
+  grid-column: 2 / 3; color: var(--muted); font-size: .84rem;
+  border-left: 3px solid var(--line); margin: 3px 0 3px 2px; padding: 3px 0 3px 12px;
+}
+.itin-leg.leg-line { border-left-color: var(--navy); color: var(--ink); }
+.itin-leg.leg-transfer { border-left-style: dashed; }
+.itin-total { margin: 10px 0 0; font-weight: 700; font-size: .92rem; }
+.itin-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.itin-actions a {
+  display: inline-block; padding: 9px 14px; border-radius: 9px; text-decoration: none;
+  background: var(--navy); color: #fff; font-weight: 700; font-size: .88rem;
+}
+.itin-actions a.sub { background: #eef2fb; color: var(--navy); border: 1px solid #d9e2f5; }
+
 @media (max-width: 520px) {
   .route-form { grid-template-columns: 1fr; }
+  .row-when { grid-template-columns: 1fr 1fr; }
+  .row-when .field:first-child { grid-column: 1 / -1; }
   .swap-btn { justify-self: center; transform: rotate(90deg); }
 }

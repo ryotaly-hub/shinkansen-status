@@ -1,5 +1,5 @@
 /* オフラインキャッシュ（アプリ本体のみ）。運行情報フィードは常にネットワークから取得する。 */
-const CACHE = 'shinkansen-unko-v2';
+const CACHE = 'shinkansen-unko-v3';
 const ASSETS = [
   './',
   './index.html',

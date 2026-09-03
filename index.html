@@ -31,16 +31,34 @@
     <form id="route-form" class="route-form">
       <div class="field">
         <label for="origin">出発駅</label>
-        <input id="origin" list="stations" placeholder="例）東京" autocomplete="off" required>
+        <select id="origin" required></select>
       </div>
       <button type="button" id="swap" class="swap-btn" title="入れ替え">⇅</button>
       <div class="field">
         <label for="dest">目的の駅</label>
-        <input id="dest" list="stations" placeholder="例）新青森" autocomplete="off" required>
+        <select id="dest" required></select>
       </div>
-      <button type="submit" class="go-btn">運行状況を調べる</button>
+
+      <div class="row-when">
+        <div class="field">
+          <label for="basis">基準</label>
+          <select id="basis">
+            <option value="dep">出発</option>
+            <option value="arr">到着</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="date">日付</label>
+          <input type="date" id="date">
+        </div>
+        <div class="field">
+          <label for="time">時刻</label>
+          <input type="time" id="time">
+        </div>
+      </div>
+
+      <button type="submit" class="go-btn">運行状況・乗換の目安を調べる</button>
     </form>
-    <datalist id="stations"></datalist>
     <div id="result" class="result"></div>
   </section>
 
@@ -53,6 +71,7 @@
 <footer class="app-footer wrap">
   <p><strong>一次情報は各鉄道会社の公式サイトです。</strong>
      フィードは Yahoo!路線情報を1日数回スクレイピングした目安で、遅延あり。必ず公式で最終確認してください。</p>
+  <p>「乗換の目安」は最速達列車を前提にした<strong>概算</strong>です（時刻表データは持っていません）。正確な時刻は結果内のリンクから乗換案内で検索してください。</p>
   <p>フィードの仕組み：<code>scraper/scrape.py</code> を GitHub Actions が定期実行し <code>status.json</code> を更新 → ⚙設定でそのURLを登録。詳細は README。</p>
 </footer>
 

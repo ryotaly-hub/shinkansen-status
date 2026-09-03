@@ -1,13 +1,10 @@
 /* ============================================================
  * 新幹線 運行状況チェッカー — メインロジック
  * ------------------------------------------------------------
- *  1) 出発駅→目的駅から経路上の新幹線各線を判定
- *  2) 運行情報フィード（status.json）があれば各線の状況を表示
- *  3) 併せて各社の公式運行情報ページへ誘導
- *
- * フィードは scraper/scrape.py が生成し、GitHub Actions が
- * status.json を更新する。アプリは raw.githubusercontent.com
- * などのURLをフィードとして読む（⚙設定）。
+ *  1) 出発駅→目的駅から経路上の新幹線各線を判定（路線グラフ BFS）
+ *  2) 出発／到着の日時から「乗換の目安」を概算表示（＋乗換案内へ deep link）
+ *  3) 運行情報フィード（status.json）があれば各線の状況を表示
+ *  4) 併せて各社の公式運行情報ページへ誘導
  * ========================================================== */
 
 const LS_KEY = 'shinkansen_unko_v2';
@@ -96,6 +93,76 @@ function planRoute(origin, dest) {
   return { segments };
 }
 
+/* ---------- 乗換の目安（概算） ---------- */
+
+function connKind(a, b) {
+  return CONNECTION_KIND[[a, b].sort().join('|')] || 'transfer';
+}
+
+// 区間の所要分（路線を等間隔とみなして按分する簡易モデル）
+function segMinutes(seg) {
+  const L = LINES[seg.lineId];
+  const i = L.stations.indexOf(seg.from);
+  const j = L.stations.indexOf(seg.to);
+  if (i < 0 || j < 0 || L.stations.length < 2) return L.mins || 30;
+  const frac = Math.abs(j - i) / (L.stations.length - 1);
+  return Math.max(5, Math.round((L.mins || 60) * frac));
+}
+
+function buildLegs(segments) {
+  const legs = [];
+  for (let k = 0; k < segments.length; k++) {
+    const seg = segments[k];
+    legs.push({ type: 'ride', lineId: seg.lineId, from: seg.from, to: seg.to, mins: segMinutes(seg) });
+    if (k < segments.length - 1) {
+      const next = segments[k + 1];
+      if (seg.to !== next.from) {
+        const tr = TRANSFERS.find(t =>
+          (t.a === seg.to && t.b === next.from) || (t.b === seg.to && t.a === next.from));
+        legs.push({ type: 'relay', from: seg.to, to: next.from, mins: (tr && tr.relayMins) || 60, note: tr && tr.note });
+      } else {
+        const kind = connKind(seg.lineId, next.lineId);
+        legs.push({ type: 'transfer', at: seg.to, kind, mins: TRANSFER_MIN[kind] });
+      }
+    }
+  }
+  return legs;
+}
+
+function assignTimes(legs, basis, when) {
+  const total = legs.reduce((s, l) => s + l.mins, 0);
+  let t = new Date(basis === 'arr' ? when.getTime() - total * 60000 : when.getTime());
+  const start = new Date(t);
+  const timed = legs.map(l => {
+    const dep = new Date(t);
+    t = new Date(t.getTime() + l.mins * 60000);
+    return { ...l, dep, arr: new Date(t) };
+  });
+  return { legs: timed, start, end: new Date(t), total };
+}
+
+function fmtDur(m) {
+  const h = Math.floor(m / 60), mm = m % 60;
+  return h ? (mm ? `${h}時間${mm}分` : `${h}時間`) : `${mm}分`;
+}
+function fmtClock(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function yahooUrl(from, to, dt, basis) {
+  const p = (n) => String(n).padStart(2, '0');
+  const mm = p(dt.getMinutes());
+  const q = new URLSearchParams({
+    from, to,
+    y: String(dt.getFullYear()), m: String(dt.getMonth() + 1), d: String(dt.getDate()),
+    hh: p(dt.getHours()), m1: mm[0], m2: mm[1],
+    type: basis === 'arr' ? '4' : '1',
+    ticket: 'ic', expkind: '1', ws: '3', shin: '1', s: '0',
+  });
+  return 'https://transit.yahoo.co.jp/search/result?' + q.toString();
+}
+
 /* ---------- 運行情報フィード ---------- */
 
 async function fetchFeed(force = false) {
@@ -175,9 +242,68 @@ function feedStamp(feed) {
   return p;
 }
 
+/* ---------- 乗換の目安の描画 ---------- */
+
+function renderItinerary(segments, origin, dest, when, basis, dateProvided) {
+  const wrap = el('div', 'itinerary');
+  wrap.appendChild(el('h3', null, '乗換の目安'));
+
+  const legs = buildLegs(segments);
+  const { legs: timed, start, end, total } = assignTimes(legs, basis, when);
+
+  const baseLabel = basis === 'arr' ? '到着' : '出発';
+  wrap.appendChild(el('p', 'itin-note',
+    `${dateProvided ? '' : '（現在時刻を基準）'}${baseLabel} ${fmtClock(when)} 指定・所要時間はおおよその概算です。正確な時刻は下の検索から。`));
+
+  const list = el('ul', 'itin-list');
+  const timeRow = (d, place) => {
+    const li = el('li', 'itin-row');
+    li.appendChild(el('span', 'itin-time', fmtClock(d)));
+    li.appendChild(el('span', 'itin-place', place));
+    return li;
+  };
+  const legRow = (cls, txt) => {
+    const li = el('li', 'itin-row');
+    li.appendChild(el('span', 'itin-time', ''));
+    li.appendChild(el('span', 'itin-leg ' + cls, txt));
+    return li;
+  };
+
+  list.appendChild(timeRow(timed[0].dep, timed[0].from + ' 発'));
+  timed.forEach((l) => {
+    if (l.type === 'ride') {
+      list.appendChild(legRow('leg-line', `${LINES[l.lineId].name}　約${fmtDur(l.mins)}`));
+      list.appendChild(timeRow(l.arr, l.to + ' 着'));
+    } else if (l.type === 'transfer') {
+      let txt;
+      if (l.kind === 'through') txt = `${l.at}：直通運転あり（別列車に乗り換える場合の目安 約${l.mins}分）`;
+      else if (l.kind === 'partial') txt = `${l.at}：乗換の目安 約${l.mins}分（直通列車もあり）`;
+      else txt = `${l.at}：乗換の目安 約${l.mins}分`;
+      list.appendChild(legRow('leg-transfer', txt));
+      list.appendChild(timeRow(l.arr, l.at + ' 発'));
+    } else { // relay
+      list.appendChild(legRow('leg-transfer', `${l.note || 'つなぎの在来線特急'}　約${fmtDur(l.mins)}`));
+      list.appendChild(timeRow(l.arr, l.to + ' 発'));
+    }
+  });
+  wrap.appendChild(list);
+
+  const nTransfer = legs.filter(l => l.type === 'transfer' || l.type === 'relay').length;
+  wrap.appendChild(el('p', 'itin-total',
+    `総所要 約${fmtDur(total)}（${fmtClock(start)} → ${fmtClock(end)}${end.getDate() !== start.getDate() ? ' 翌日' : ''}／乗換 ${nTransfer}回）`));
+
+  const actions = el('div', 'itin-actions');
+  const y = el('a', null, 'Yahoo!路線情報で正確な時刻を検索');
+  y.href = yahooUrl(origin, dest, when, basis); y.target = '_blank'; y.rel = 'noopener';
+  actions.appendChild(y);
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
 /* ---------- 経路検索の描画 ---------- */
 
-async function renderResult(origin, dest) {
+async function renderResult(origin, dest, opts) {
   const out = $('#result');
   out.innerHTML = '';
 
@@ -200,6 +326,8 @@ async function renderResult(origin, dest) {
     summary.appendChild(el('p', 'muted', '※ ' + s.transferNote)));
   out.appendChild(summary);
 
+  out.appendChild(renderItinerary(plan.segments, origin, dest, opts.when, opts.basis, opts.dateProvided));
+
   const feed = await withFeed(out);
 
   const seen = new Set();
@@ -219,7 +347,7 @@ async function renderResult(origin, dest) {
   out.appendChild(ref);
 }
 
-// フィード取得＋状態表示。取得できたら feed オブジェクト、ダメなら null を返す
+// フィード取得＋状態表示。取得できたら feed オブジェクト、ダメなら null
 async function withFeed(out) {
   if (!settings.feedEnabled || !settings.feedUrl) return null;
   const loading = el('div', 'notice', '運行情報フィードを取得中…');
@@ -252,9 +380,31 @@ async function renderOverview() {
 }
 
 /* ---------- 初期化 ---------- */
-function initStationInputs() {
-  const dl = $('#stations');
-  ALL_STATIONS.forEach(s => { const o = document.createElement('option'); o.value = s; dl.appendChild(o); });
+function fillStationSelect(sel, defaultVal) {
+  sel.innerHTML = '';
+  const ph = el('option', null, '— 駅を選択 —');
+  ph.value = ''; ph.disabled = true; ph.selected = true;
+  sel.appendChild(ph);
+  Object.values(LINES).forEach(L => {
+    const og = document.createElement('optgroup');
+    og.label = L.name;
+    L.stations.forEach(st => {
+      const o = el('option', null, st);
+      o.value = st;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  if (defaultVal) sel.value = defaultVal;
+}
+
+function initInputs() {
+  fillStationSelect($('#origin'), '東京');
+  fillStationSelect($('#dest'), '');
+  const now = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  $('#date').value = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+  $('#time').value = `${p(now.getHours())}:${p(now.getMinutes())}`;
 }
 
 function initTabs() {
@@ -303,9 +453,15 @@ function updateFeedIndicator() {
 function initForm() {
   $('#route-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const o = $('#origin').value.trim();
-    const d = $('#dest').value.trim();
-    if (o && d) renderResult(o, d);
+    const o = $('#origin').value;
+    const d = $('#dest').value;
+    if (!o || !d) return;
+    const basis = $('#basis').value;
+    const dateStr = $('#date').value;
+    const timeStr = $('#time').value;
+    const dateProvided = !!(dateStr && timeStr);
+    const when = dateProvided ? new Date(`${dateStr}T${timeStr}`) : new Date();
+    renderResult(o, d, { basis, when, dateProvided });
   });
   $('#swap').addEventListener('click', () => {
     const o = $('#origin'), d = $('#dest');
@@ -314,7 +470,7 @@ function initForm() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  initStationInputs();
+  initInputs();
   initTabs();
   initSettings();
   initForm();
