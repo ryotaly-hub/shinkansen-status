@@ -163,6 +163,106 @@ function yahooUrl(from, to, dt, basis) {
   return 'https://transit.yahoo.co.jp/search/result?' + q.toString();
 }
 
+/* ---------- 運賃・料金のめやす（概算） ---------- */
+
+const fareLookup = (a, b) => FARE_TABLE[a + '|' + b] || FARE_TABLE[b + '|' + a] || null;
+const round100 = (n) => Math.round(n / 100) * 100;
+const yen = (n) => (n == null ? '－' : '¥' + Math.round(n).toLocaleString('ja-JP'));
+
+function fareCurve(km) {
+  const c = FARE_CURVE;
+  if (km <= c[0][0]) return c[0][1];
+  for (let i = 1; i < c.length; i++) {
+    if (km <= c[i][0]) {
+      const [k0, v0] = c[i - 1], [k1, v1] = c[i];
+      return v0 + (v1 - v0) * (km - k0) / (k1 - k0);
+    }
+  }
+  const [k1, v1] = c[c.length - 1];
+  return v1 + (km - k1) * 21;
+}
+
+// グリーン料金のめやす（本州・距離帯。九州はやや安いが概算では共通）
+function greenFee(km) {
+  if (km <= 100) return 1300;
+  if (km <= 200) return 2800;
+  if (km <= 400) return 4190;
+  if (km <= 600) return 5400;
+  if (km <= 800) return 6600;
+  return 8000;
+}
+
+function segKm(seg) {
+  const L = LINES[seg.lineId];
+  const i = L.stations.indexOf(seg.from), j = L.stations.indexOf(seg.to);
+  if (i < 0 || j < 0 || L.stations.length < 2) return L.km || 100;
+  return (L.km || 100) * Math.abs(j - i) / (L.stations.length - 1);
+}
+
+function jiyuFromShitei(s, lineId, km) {
+  if (NO_JIYU.has(lineId)) return null;
+  const premium = (lineId === 'tokaido' || lineId === 'sanyo' || lineId === 'kyushu');
+  return round100(s - (premium ? Math.max(760, km * 1.5) : 530));
+}
+
+// 区間の運賃（{s, j, g, est}）
+function segFare(seg) {
+  const km = segKm(seg);
+  const hit = fareLookup(seg.from, seg.to);
+  if (hit) {
+    // 表に j を明示（数値 or null=全車指定）。未定義のときだけ推計。
+    const j = hit.j !== undefined ? hit.j : jiyuFromShitei(hit.s, seg.lineId, km);
+    return { s: hit.s, j, g: round100(hit.s - 520 + greenFee(km)), est: false };
+  }
+  const f = LINE_FARE_FACTOR[seg.lineId] || 1.05;
+  const s = round100(fareCurve(km) * f);
+  return { s, j: jiyuFromShitei(s, seg.lineId, km), g: round100(s - 520 + greenFee(km)), est: true };
+}
+
+function tripFare(origin, dest, segments) {
+  const rows = segments.map(seg => ({
+    label: `${LINES[seg.lineId].name}（${seg.from}→${seg.to}）`,
+    ...segFare(seg),
+  }));
+
+  const totalKm = segments.reduce((a, seg) => a + segKm(seg), 0);
+  const anyNoJiyu = segments.some(seg => NO_JIYU.has(seg.lineId));
+
+  // 区間の切れ目がすべて直通/一部直通か（＝実質乗り換えなし）
+  const allThrough = segments.every((seg, i) =>
+    i === 0 || (segments[i - 1].to === seg.from
+      && ['through', 'partial'].includes(connKind(segments[i - 1].lineId, seg.lineId))));
+
+  const through = fareLookup(origin, dest);
+  let total, totalEst, totalNote;
+  if (through) {
+    const j = through.j !== undefined ? through.j
+      : (anyNoJiyu ? null : round100(through.s - Math.max(760, totalKm * 1.5)));
+    total = { s: through.s, j, g: round100(through.s - 520 + greenFee(totalKm)) };
+    totalEst = false;
+    totalNote = '通しの乗車券の目安';
+  } else if (segments.length > 1 && allThrough) {
+    // 直通なので1本の距離として概算（区間の足し算だと特急料金を二重に数えてしまう）
+    const domLine = segments.slice().sort((a, b) => segKm(b) - segKm(a))[0].lineId;
+    const s = round100(fareCurve(totalKm) * (LINE_FARE_FACTOR[domLine] || 1.05));
+    total = {
+      s,
+      j: anyNoJiyu ? null : jiyuFromShitei(s, domLine, totalKm),
+      g: round100(s - 520 + greenFee(totalKm)),
+    };
+    totalEst = true;
+    totalNote = '直通の目安（概算）';
+  } else {
+    const sum = (k) => rows.every(r => r[k] != null) ? rows.reduce((a, r) => a + r[k], 0) : null;
+    total = { s: sum('s'), j: sum('j'), g: sum('g') };
+    totalEst = true;
+    const hasRelay = segments.some((seg, i) => i > 0 && segments[i - 1].to !== seg.from);
+    totalNote = hasRelay ? '在来線乗継を含む概算（通しの乗車券とは差が出やすい）'
+      : (segments.length > 1 ? '区間ごとの合計（通しだと数百円安いことがあります）' : 'めやす');
+  }
+  return { rows, total, totalEst, totalNote };
+}
+
 /* ---------- 運行情報フィード ---------- */
 
 async function fetchFeed(force = false) {
@@ -293,11 +393,50 @@ function renderItinerary(segments, origin, dest, when, basis, dateProvided) {
     `総所要 約${fmtDur(total)}（${fmtClock(start)} → ${fmtClock(end)}${end.getDate() !== start.getDate() ? ' 翌日' : ''}／乗換 ${nTransfer}回）`));
 
   const actions = el('div', 'itin-actions');
-  const y = el('a', null, 'Yahoo!路線情報で正確な時刻を検索');
+  const y = el('a', null, 'Yahoo!路線情報で正確な時刻・運賃を検索');
   y.href = yahooUrl(origin, dest, when, basis); y.target = '_blank'; y.rel = 'noopener';
   actions.appendChild(y);
   wrap.appendChild(actions);
 
+  return wrap;
+}
+
+/* ---------- 運賃・料金のめやすの描画 ---------- */
+
+function renderFare(segments, origin, dest) {
+  const { rows, total, totalEst, totalNote } = tripFare(origin, dest, segments);
+  const wrap = el('div', 'fare-card');
+  wrap.appendChild(el('h3', null, '運賃・料金のめやす'));
+
+  const scroll = el('div', 'fare-scroll');
+  const table = el('table', 'fare-table');
+  const thead = el('tr', null);
+  ['', '自由席', '指定席', 'グリーン車'].forEach(h => thead.appendChild(el('th', null, h)));
+  table.appendChild(thead);
+
+  const mark = (est) => (est ? ' †' : '');
+  rows.forEach(r => {
+    const tr = el('tr', null);
+    tr.appendChild(el('td', 'fare-label', r.label + mark(r.est)));
+    tr.appendChild(el('td', 'fare-num', yen(r.j)));
+    tr.appendChild(el('td', 'fare-num', yen(r.s)));
+    tr.appendChild(el('td', 'fare-num', yen(r.g)));
+    table.appendChild(tr);
+  });
+
+  const tr = el('tr', 'fare-total');
+  tr.appendChild(el('td', 'fare-label', `合計（${totalNote}）` + mark(totalEst)));
+  tr.appendChild(el('td', 'fare-num', yen(total.j)));
+  tr.appendChild(el('td', 'fare-num', yen(total.s)));
+  tr.appendChild(el('td', 'fare-num', yen(total.g)));
+  table.appendChild(tr);
+
+  scroll.appendChild(table);
+  wrap.appendChild(scroll);
+
+  wrap.appendChild(el('p', 'itin-note',
+    '大人1名・片道・通常期のめやすです（† は距離からの概算）。'
+    + '割引きっぷ・早特・往復割引は含みません。正確な運賃は上の「Yahoo!路線情報」で確認してください。'));
   return wrap;
 }
 
@@ -327,6 +466,7 @@ async function renderResult(origin, dest, opts) {
   out.appendChild(summary);
 
   out.appendChild(renderItinerary(plan.segments, origin, dest, opts.when, opts.basis, opts.dateProvided));
+  out.appendChild(renderFare(plan.segments, origin, dest));
 
   const feed = await withFeed(out);
 

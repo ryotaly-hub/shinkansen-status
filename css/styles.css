@@ -199,6 +199,21 @@ body {
 }
 .itin-actions a.sub { background: #eef2fb; color: var(--navy); border: 1px solid #d9e2f5; }
 
+/* 運賃・料金のめやす */
+.fare-card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
+}
+.fare-card h3 { margin: 0 0 8px; font-size: 1rem; }
+.fare-scroll { overflow-x: auto; }
+.fare-table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+.fare-table th, .fare-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.fare-table th { color: var(--muted); font-size: .78rem; font-weight: 700; text-align: right; }
+.fare-table th:first-child { text-align: left; }
+.fare-label { text-align: left; }
+.fare-num { text-align: right; font-variant-numeric: tabular-nums; }
+.fare-table tr.fare-total td { border-top: 2px solid var(--navy); border-bottom: 0; font-weight: 700; }
+.fare-table tr.fare-total .fare-num { color: var(--navy); }
+
 @media (max-width: 520px) {
   .route-form { grid-template-columns: 1fr; }
   .row-when { grid-template-columns: 1fr 1fr; }
