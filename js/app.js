@@ -292,6 +292,18 @@ const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) 
 
 function badge(level, label) { return el('span', 'status-badge ' + level, label); }
 
+// 数値タイル（Statistics 風）
+function renderStats(items) {
+  const row = el('div', 'stat-row');
+  items.forEach(it => {
+    const s = el('div', 'stat' + (it.accent ? ' accent' : ''));
+    s.appendChild(el('span', 'stat-l', it.label));
+    s.appendChild(el('span', 'stat-v', it.value));
+    row.appendChild(s);
+  });
+  return row;
+}
+
 function officialCard(opId) {
   const o = OFFICIAL[opId];
   const wrap = el('div', 'link-card');
@@ -372,7 +384,9 @@ function renderItinerary(segments, origin, dest, when, basis, dateProvided) {
   list.appendChild(timeRow(timed[0].dep, timed[0].from + ' 発'));
   timed.forEach((l) => {
     if (l.type === 'ride') {
-      list.appendChild(legRow('leg-line', `${LINES[l.lineId].name}　約${fmtDur(l.mins)}`));
+      const lr = legRow('leg-line', `${LINES[l.lineId].name}　約${fmtDur(l.mins)}`);
+      lr.querySelector('.itin-leg').style.setProperty('--c', LINES[l.lineId].color);
+      list.appendChild(lr);
       list.appendChild(timeRow(l.arr, l.to + ' 着'));
     } else if (l.type === 'transfer') {
       let txt;
@@ -389,8 +403,13 @@ function renderItinerary(segments, origin, dest, when, basis, dateProvided) {
   wrap.appendChild(list);
 
   const nTransfer = legs.filter(l => l.type === 'transfer' || l.type === 'relay').length;
-  wrap.appendChild(el('p', 'itin-total',
-    `総所要 約${fmtDur(total)}（${fmtClock(start)} → ${fmtClock(end)}${end.getDate() !== start.getDate() ? ' 翌日' : ''}／乗換 ${nTransfer}回）`));
+  const nextDay = end.getDate() !== start.getDate();
+  wrap.appendChild(renderStats([
+    { label: '所要時間（目安）', value: '約' + fmtDur(total) },
+    { label: basis === 'arr' ? '出発（目安）' : '到着（目安）',
+      value: fmtClock(basis === 'arr' ? start : end) + (nextDay ? '（翌）' : '') },
+    { label: '乗り換え', value: nTransfer + ' 回' },
+  ]));
 
   const actions = el('div', 'itin-actions');
   const y = el('a', null, 'Yahoo!路線情報で正確な時刻・運賃を検索');
@@ -407,6 +426,14 @@ function renderFare(segments, origin, dest) {
   const { rows, total, totalEst, totalNote } = tripFare(origin, dest, segments);
   const wrap = el('div', 'fare-card');
   wrap.appendChild(el('h3', null, '運賃・料金のめやす'));
+
+  const t = (totalEst ? ' †' : '');
+  wrap.appendChild(renderStats([
+    { label: '自由席', value: (total.j == null ? '－' : yen(total.j) + t) },
+    { label: '指定席', value: yen(total.s) + t, accent: true },
+    { label: 'グリーン車', value: yen(total.g) + t },
+  ]));
+  wrap.appendChild(el('p', 'muted', `合計・${totalNote}（大人1名・片道・通常期）`));
 
   const scroll = el('div', 'fare-scroll');
   const table = el('table', 'fare-table');

@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b3d91">
+<meta name="theme-color" content="#eef2f9">
 <title>新幹線で行ってみよう！</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icons/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
@@ -21,13 +24,23 @@
   </div>
 </header>
 
-<nav class="tabs wrap">
-  <button class="tab active" data-panel="panel-search">経路で検索</button>
-  <button class="tab" data-panel="panel-overview">全線一覧</button>
+<nav class="tabnav wrap">
+  <div class="tabs">
+    <button class="tab active" data-panel="panel-search">経路で検索</button>
+    <button class="tab" data-panel="panel-overview">全線一覧</button>
+  </div>
 </nav>
 
 <main class="wrap">
   <section id="panel-search" class="panel active">
+    <div class="hero">
+      <div class="hero-text">
+        <p class="hero-kicker">Shinkansen Navi</p>
+        <h2>どこへ行く？</h2>
+        <p>出発駅と到着駅を選ぶだけ。<br>運行状況・乗換・運賃をまとめてチェック。</p>
+      </div>
+    </div>
+
     <form id="route-form" class="route-form">
       <div class="field">
         <label for="origin">出発駅</label>
