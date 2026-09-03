@@ -325,7 +325,7 @@ function lineCard(lineId, feed) {
   }
 
   card.appendChild(el('p', 'info-text', '👇 最新・正確な状況は公式サイトで'));
-  card.appendChild(officialCard(L.op));
+  card.appendChild(officialCard(L.official || L.op));
   if (L.subOfficial) card.appendChild(officialCard(L.subOfficial));
   return card;
 }

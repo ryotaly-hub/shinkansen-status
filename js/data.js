@@ -62,7 +62,7 @@ const LINES = {
     stations: ['博多','新鳥栖','久留米','筑後船小屋','新大牟田','新玉名','熊本','新八代','新水俣','出水','川内','鹿児島中央'],
   },
   nishikyushu: {
-    name: '西九州新幹線', op: 'jrk', color: '#d80c18', mins: 30, km: 66,
+    name: '西九州新幹線', op: 'jrk', official: 'jrk_nishi', color: '#d80c18', mins: 30, km: 66,
     stations: ['武雄温泉','嬉野温泉','新大村','諫早','長崎'],
   },
 };
@@ -197,7 +197,12 @@ const OFFICIAL = {
   jrk: {
     label: 'JR九州 運行情報（九州新幹線）',
     url: 'https://www.jrkyushu.co.jp/trains/info/',
-    note: '西九州新幹線は https://www.jrkyushu.co.jp/trains/info/nishi.html',
+    note: '',
+  },
+  jrk_nishi: {
+    label: 'JR九州 運行情報（西九州新幹線）',
+    url: 'https://www.jrkyushu.co.jp/trains/info/nishi.html',
+    note: '',
   },
   jrh: {
     label: 'JR北海道 列車運行情報',
