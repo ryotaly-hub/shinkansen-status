@@ -66,7 +66,7 @@ function findLinePath(fromLines, toLines) {
 }
 
 function planRoute(origin, dest) {
-  if (origin === dest) return { error: '出発駅と目的駅が同じです。' };
+  if (origin === dest) return { error: '出発駅と到着駅が同じです。' };
   const oLines = STATION_LINES[origin];
   const dLines = STATION_LINES[dest];
   if (!oLines) return { error: `「${origin}」は新幹線の駅として登録されていません。` };
@@ -442,12 +442,26 @@ function renderFare(segments, origin, dest) {
 
 /* ---------- 経路検索の描画 ---------- */
 
+// スマホでは検索結果へスムーズにスクロールして「検索完了」を示す
+function scrollToResult() {
+  if (!(window.matchMedia && window.matchMedia('(max-width: 520px)').matches)) return;
+  const out = $('#result');
+  requestAnimationFrame(() => {
+    const top = out.getBoundingClientRect().top + window.scrollY - 56;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  });
+}
+
 async function renderResult(origin, dest, opts) {
   const out = $('#result');
   out.innerHTML = '';
 
   const plan = planRoute(origin, dest);
-  if (plan.error) { out.appendChild(el('div', 'notice error', plan.error)); return; }
+  if (plan.error) {
+    out.appendChild(el('div', 'notice error', plan.error));
+    scrollToResult();
+    return;
+  }
 
   const summary = el('div', 'route-summary');
   summary.appendChild(el('h2', null, `${origin} → ${dest}`));
@@ -467,6 +481,7 @@ async function renderResult(origin, dest, opts) {
 
   out.appendChild(renderItinerary(plan.segments, origin, dest, opts.when, opts.basis, opts.dateProvided));
   out.appendChild(renderFare(plan.segments, origin, dest));
+  scrollToResult();
 
   const feed = await withFeed(out);
 

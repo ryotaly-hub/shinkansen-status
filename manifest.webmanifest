@@ -1,7 +1,7 @@
 {
   "name": "新幹線 運行状況チェッカー",
   "short_name": "新幹線運行",
-  "description": "出発駅から目的の駅までの新幹線の運行状況をまとめて確認",
+  "description": "出発駅から到着駅までの新幹線の運行状況をまとめて確認",
   "lang": "ja",
   "start_url": "./index.html",
   "scope": "./",
