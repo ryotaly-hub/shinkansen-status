@@ -562,27 +562,59 @@ async function renderOverview() {
 }
 
 /* ---------- 初期化 ---------- */
+// 16進カラーを白と混ぜた淡いトーンにする（amt=0で白、1で原色）
+function tintColor(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map(c => Math.round(c * amt + 255 * (1 - amt)));
+  return `rgb(${ch[0]},${ch[1]},${ch[2]})`;
+}
+
 function fillStationSelect(sel, defaultVal) {
   sel.innerHTML = '';
   const ph = el('option', null, '— 駅を選択 —');
   ph.value = ''; ph.disabled = true; ph.selected = true;
   sel.appendChild(ph);
+  // 駅名 → 路線色（closed 表示の左アクセント用）
+  const stationColor = {};
   Object.values(LINES).forEach(L => {
     const og = document.createElement('optgroup');
-    og.label = L.name;
+    og.label = '　' + L.name + '　';               // 路線名（optgroup 見出し）
+    og.style.background = L.color;                  // イメージカラーをベースに
+    og.style.color = '#fff';
+    og.style.fontWeight = '700';
+    const rowBg = tintColor(L.color, 0.13);          // 各駅は路線色の淡いトーン
     L.stations.forEach(st => {
       const o = el('option', null, st);
       o.value = st;
+      o.style.background = rowBg;
+      o.style.color = '#1b2536';
       og.appendChild(o);
+      stationColor[st] = stationColor[st] || L.color;
     });
     sel.appendChild(og);
   });
+  sel._stationColor = stationColor;
   if (defaultVal) sel.value = defaultVal;
+  paintSelectAccent(sel);
+}
+
+// 選択中の駅の路線色を、閉じた状態の <select> の左に細く出す
+function paintSelectAccent(sel) {
+  const c = sel.value && sel._stationColor ? sel._stationColor[sel.value] : null;
+  if (c) {
+    sel.style.borderLeftColor = c;
+    sel.style.borderLeftWidth = '4px';
+  } else {
+    sel.style.borderLeftColor = '';
+    sel.style.borderLeftWidth = '';
+  }
 }
 
 function initInputs() {
   fillStationSelect($('#origin'), '東京');
   fillStationSelect($('#dest'), '');
+  ['#origin', '#dest'].forEach(s => $(s).addEventListener('change', (e) => paintSelectAccent(e.target)));
   const now = new Date();
   const p = (n) => String(n).padStart(2, '0');
   $('#date').value = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
@@ -648,6 +680,7 @@ function initForm() {
   $('#swap').addEventListener('click', () => {
     const o = $('#origin'), d = $('#dest');
     [o.value, d.value] = [d.value, o.value];
+    paintSelectAccent(o); paintSelectAccent(d);
   });
 }
 
