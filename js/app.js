@@ -561,60 +561,164 @@ async function renderOverview() {
   Object.keys(LINES).forEach(id => out.appendChild(lineCard(id, feed)));
 }
 
-/* ---------- 初期化 ---------- */
-// 16進カラーを白と混ぜた淡いトーンにする（amt=0で白、1で原色）
+/* ---------- 駅セレクト（自作ドロップダウン：路線ごとに色分け・iOSでも有効） ---------- */
+
+// 16進カラーを白と混ぜた淡いトーン（amt=0で白、1で原色）
 function tintColor(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
     .map(c => Math.round(c * amt + 255 * (1 - amt)));
   return `rgb(${ch[0]},${ch[1]},${ch[2]})`;
 }
-
-function fillStationSelect(sel, defaultVal) {
-  sel.innerHTML = '';
-  const ph = el('option', null, '— 駅を選択 —');
-  ph.value = ''; ph.disabled = true; ph.selected = true;
-  sel.appendChild(ph);
-  // 駅名 → 路線色（closed 表示の左アクセント用）
-  const stationColor = {};
-  Object.values(LINES).forEach(L => {
-    const og = document.createElement('optgroup');
-    og.label = '　' + L.name + '　';               // 路線名（optgroup 見出し）
-    og.style.background = L.color;                  // イメージカラーをベースに
-    og.style.color = '#fff';
-    og.style.fontWeight = '700';
-    const rowBg = tintColor(L.color, 0.13);          // 各駅は路線色の淡いトーン
-    L.stations.forEach(st => {
-      const o = el('option', null, st);
-      o.value = st;
-      o.style.background = rowBg;
-      o.style.color = '#1b2536';
-      og.appendChild(o);
-      stationColor[st] = stationColor[st] || L.color;
-    });
-    sel.appendChild(og);
-  });
-  sel._stationColor = stationColor;
-  if (defaultVal) sel.value = defaultVal;
-  paintSelectAccent(sel);
+// 16進カラーを黒と混ぜて暗く（文字色用）
+function shadeColor(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => Math.round(c * (1 - amt)));
+  return `rgb(${ch[0]},${ch[1]},${ch[2]})`;
 }
 
-// 選択中の駅の路線色を、閉じた状態の <select> の左に細く出す
-function paintSelectAccent(sel) {
-  const c = sel.value && sel._stationColor ? sel._stationColor[sel.value] : null;
-  if (c) {
-    sel.style.borderLeftColor = c;
-    sel.style.borderLeftWidth = '4px';
-  } else {
-    sel.style.borderLeftColor = '';
-    sel.style.borderLeftWidth = '';
+// 単一の共有ポップアップ
+let stnPop = null;
+let stnActive = null; // 現在ひらいている .stnsel
+
+function buildStnPop() {
+  const pop = el('div', 'stnpop');
+  pop.hidden = true;
+  pop.innerHTML =
+    '<div class="stnpop-head">' +
+      '<input class="stnpop-search" type="text" inputmode="search" placeholder="駅名・路線名で絞り込み" autocomplete="off">' +
+      '<button type="button" class="stnpop-close" aria-label="閉じる">✕</button>' +
+    '</div><div class="stnpop-list" role="listbox"></div>';
+  const list = pop.querySelector('.stnpop-list');
+
+  Object.entries(LINES).forEach(([id, L]) => {
+    const head = el('div', 'stnpop-line');
+    head.textContent = L.name;
+    head.dataset.line = id;
+    head.style.setProperty('--c', L.color);
+    head.style.background = tintColor(L.color, 0.20);
+    head.style.color = shadeColor(L.color, 0.40);
+    list.appendChild(head);
+    L.stations.forEach(st => {
+      const o = el('button', 'stnpop-opt');
+      o.type = 'button';
+      o.textContent = st;
+      o.dataset.v = st;
+      o.dataset.line = id;
+      o.dataset.lname = L.name;
+      o.style.setProperty('--c', L.color);
+      o.style.setProperty('--tint', tintColor(L.color, 0.10));
+      o.style.setProperty('--tint-h', tintColor(L.color, 0.22));
+      list.appendChild(o);
+    });
+  });
+
+  const backdrop = el('div', 'stnpop-backdrop');
+  backdrop.hidden = true;
+  document.body.appendChild(backdrop);
+  document.body.appendChild(pop);
+
+  const close = () => closeStnPop();
+  backdrop.addEventListener('click', close);
+  pop.querySelector('.stnpop-close').addEventListener('click', close);
+  pop.querySelector('.stnpop-search').addEventListener('input', (e) => filterStnPop(e.target.value));
+  list.addEventListener('click', (e) => {
+    const o = e.target.closest('.stnpop-opt');
+    if (o) chooseStn(o.dataset.v);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pop.hidden) close(); });
+  window.addEventListener('resize', () => { if (!pop.hidden) positionStnPop(); });
+
+  stnPop = { pop, backdrop, list, search: pop.querySelector('.stnpop-search') };
+  return stnPop;
+}
+
+function filterStnPop(q) {
+  q = q.trim();
+  const { list } = stnPop;
+  const opts = list.querySelectorAll('.stnpop-opt');
+  const shown = new Set();
+  opts.forEach(o => {
+    const hit = !q || o.dataset.v.includes(q) || o.dataset.lname.includes(q);
+    o.hidden = !hit;
+    if (hit) shown.add(o.dataset.line);
+  });
+  list.querySelectorAll('.stnpop-line').forEach(h => { h.hidden = !shown.has(h.dataset.line); });
+}
+
+function positionStnPop() {
+  const { pop } = stnPop;
+  const mobile = window.matchMedia('(max-width: 560px)').matches;
+  pop.classList.toggle('sheet', mobile);
+  if (mobile) { pop.style.cssText = ''; return; }
+  const btn = stnActive.querySelector('.stnsel-btn');
+  const r = btn.getBoundingClientRect();
+  const w = Math.max(r.width, 240);
+  pop.style.position = 'absolute';
+  pop.style.width = w + 'px';
+  pop.style.left = (window.scrollX + Math.min(r.left, window.innerWidth - w - 12)) + 'px';
+  pop.style.top = (window.scrollY + r.bottom + 6) + 'px';
+}
+
+function openStnPop(wrap) {
+  if (!stnPop) buildStnPop();
+  stnActive = wrap;
+  const cur = $('#' + wrap.dataset.target).value;
+  stnPop.search.value = '';
+  filterStnPop('');
+  stnPop.list.querySelectorAll('.stnpop-opt').forEach(o => {
+    o.setAttribute('aria-selected', o.dataset.v === cur ? 'true' : 'false');
+  });
+  stnPop.backdrop.hidden = false;
+  stnPop.pop.hidden = false;
+  positionStnPop();
+  wrap.querySelector('.stnsel-btn').setAttribute('aria-expanded', 'true');
+  const sel = stnPop.list.querySelector('.stnpop-opt[aria-selected="true"]');
+  if (sel) sel.scrollIntoView({ block: 'center' });
+  if (!window.matchMedia('(max-width: 560px)').matches) setTimeout(() => stnPop.search.focus(), 0);
+}
+
+function closeStnPop() {
+  if (!stnPop || stnPop.pop.hidden) return;
+  stnPop.pop.hidden = true;
+  stnPop.backdrop.hidden = true;
+  if (stnActive) {
+    stnActive.querySelector('.stnsel-btn').setAttribute('aria-expanded', 'false');
+    stnActive.querySelector('.stnsel-btn').focus();
   }
+  stnActive = null;
+}
+
+function chooseStn(v) {
+  if (!stnActive) return;
+  setStnValue(stnActive, v, true);
+  closeStnPop();
+}
+
+// wrap(.stnsel) の値を設定。fire=true で change を発火（app.js の他処理と連動）
+function setStnValue(wrap, v, fire) {
+  const input = $('#' + wrap.dataset.target);
+  input.value = v;
+  const valEl = wrap.querySelector('.stnsel-val');
+  const L = v ? LINES[STATION_LINES[v] ? STATION_LINES[v][0] : null] : null;
+  valEl.textContent = v || valEl.dataset.placeholder;
+  valEl.classList.toggle('is-empty', !v);
+  wrap.style.setProperty('--c', L ? L.color : 'transparent');
+  wrap.classList.toggle('has-line', !!L);
+  wrap.querySelector('.stnsel-btn').classList.remove('err');
+  if (fire) input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function initInputs() {
-  fillStationSelect($('#origin'), '東京');
-  fillStationSelect($('#dest'), '');
-  ['#origin', '#dest'].forEach(s => $(s).addEventListener('change', (e) => paintSelectAccent(e.target)));
+  document.querySelectorAll('.stnsel').forEach(wrap => {
+    wrap.querySelector('.stnsel-btn').addEventListener('click', () => {
+      if (stnPop && !stnPop.pop.hidden && stnActive === wrap) closeStnPop();
+      else openStnPop(wrap);
+    });
+  });
+  setStnValue($('#origin').closest('.stnsel'), '東京', false);
+  setStnValue($('#dest').closest('.stnsel'), '', false);
+
   const now = new Date();
   const p = (n) => String(n).padStart(2, '0');
   $('#date').value = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
@@ -669,7 +773,13 @@ function initForm() {
     e.preventDefault();
     const o = $('#origin').value;
     const d = $('#dest').value;
-    if (!o || !d) return;
+    if (!o || !d) {
+      const wrap = (!o ? $('#origin') : $('#dest')).closest('.stnsel');
+      const btn = wrap.querySelector('.stnsel-btn');
+      btn.classList.add('err');
+      openStnPop(wrap);
+      return;
+    }
     const basis = $('#basis').value;
     const dateStr = $('#date').value;
     const timeStr = $('#time').value;
@@ -678,9 +788,10 @@ function initForm() {
     renderResult(o, d, { basis, when, dateProvided });
   });
   $('#swap').addEventListener('click', () => {
-    const o = $('#origin'), d = $('#dest');
-    [o.value, d.value] = [d.value, o.value];
-    paintSelectAccent(o); paintSelectAccent(d);
+    const ow = $('#origin').closest('.stnsel'), dw = $('#dest').closest('.stnsel');
+    const ov = $('#origin').value, dv = $('#dest').value;
+    setStnValue(ow, dv, true);
+    setStnValue(dw, ov, true);
   });
 }
 

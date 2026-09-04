@@ -44,13 +44,25 @@
 
     <form id="route-form" class="route-form">
       <div class="field">
-        <label for="origin">出発駅</label>
-        <select id="origin" required></select>
+        <label for="origin-btn">出発駅</label>
+        <div class="stnsel" data-target="origin">
+          <button type="button" id="origin-btn" class="stnsel-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="stnsel-val" data-placeholder="駅を選択">駅を選択</span>
+            <span class="stnsel-caret" aria-hidden="true">▾</span>
+          </button>
+          <input type="hidden" id="origin">
+        </div>
       </div>
       <button type="button" id="swap" class="swap-btn" title="入れ替え">⇅</button>
       <div class="field">
-        <label for="dest">到着駅</label>
-        <select id="dest" required></select>
+        <label for="dest-btn">到着駅</label>
+        <div class="stnsel" data-target="dest">
+          <button type="button" id="dest-btn" class="stnsel-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="stnsel-val" data-placeholder="駅を選択">駅を選択</span>
+            <span class="stnsel-caret" aria-hidden="true">▾</span>
+          </button>
+          <input type="hidden" id="dest">
+        </div>
       </div>
 
       <div class="row-when">
