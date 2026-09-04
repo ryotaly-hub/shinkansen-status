@@ -119,7 +119,8 @@ css/styles.css                スタイル
 js/data.js                    路線・駅・乗換・運賃表・公式リンクの定義（データ更新はここ）
 js/app.js                     経路探索・乗換/運賃の概算・フィード取得・描画
 manifest.webmanifest / sw.js  PWA
-icons/icon.svg                アイコン
+icons/icon-*.png             アプリアイコン（192 / 512 / maskable / apple-touch。Nano Banana Pro 生成）
+img/hero.webp                ヒーローバナー（Nano Banana Pro 生成）
 status.json                   スクレイパー生成の運行状況（Actionsが更新）
 scraper/scrape.py             スクレイパー本体
 .github/workflows/scrape.yml  GitHub Actions（cron）

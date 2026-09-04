@@ -1,5 +1,5 @@
 /* オフラインキャッシュ（アプリ本体のみ）。運行情報フィードは常にネットワークから取得する。 */
-const CACHE = 'shinkansen-unko-v9';
+const CACHE = 'shinkansen-unko-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,10 @@ const ASSETS = [
   './js/data.js',
   './js/app.js',
   './manifest.webmanifest',
-  './icons/icon.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable.png',
+  './icons/apple-touch-icon.png',
   './img/hero.webp',
 ];
 
