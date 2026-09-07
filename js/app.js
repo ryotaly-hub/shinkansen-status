@@ -613,6 +613,10 @@ function buildStnPop() {
     });
   });
 
+  const empty = el('div', 'stnpop-empty', '該当する駅がありません');
+  empty.hidden = true;
+  list.appendChild(empty);
+
   const backdrop = el('div', 'stnpop-backdrop');
   backdrop.hidden = true;
   document.body.appendChild(backdrop);
@@ -636,14 +640,16 @@ function buildStnPop() {
 function filterStnPop(q) {
   q = q.trim();
   const { list } = stnPop;
-  const opts = list.querySelectorAll('.stnpop-opt');
   const shown = new Set();
-  opts.forEach(o => {
+  let n = 0;
+  list.querySelectorAll('.stnpop-opt').forEach(o => {
     const hit = !q || o.dataset.v.includes(q) || o.dataset.lname.includes(q);
     o.hidden = !hit;
-    if (hit) shown.add(o.dataset.line);
+    if (hit) { shown.add(o.dataset.line); n++; }
   });
   list.querySelectorAll('.stnpop-line').forEach(h => { h.hidden = !shown.has(h.dataset.line); });
+  const empty = list.querySelector('.stnpop-empty');
+  if (empty) empty.hidden = n > 0;
 }
 
 function positionStnPop() {
