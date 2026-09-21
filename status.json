@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-21T18:07:51+09:00",
+  "generatedAt": "2026-09-21T21:09:08+09:00",
   "source": "Yahoo!路線情報 (transit.yahoo.co.jp/diainfo)",
   "note": "一次情報は各鉄道会社の公式サイト。本データは目安です。",
   "lines": {
@@ -9,7 +9,7 @@
       "level": "normal",
       "label": "平常運転",
       "text": "現在､事故･遅延に関する情報はありません。",
-      "updated": "9月21日 18時6分更新"
+      "updated": "9月21日 21時8分更新"
     },
     "hokkaido": {
       "name": "北海道新幹線",
@@ -17,7 +17,7 @@
       "level": "normal",
       "label": "平常運転",
       "text": "現在､事故･遅延に関する情報はありません。",
-      "updated": "9月21日 18時6分更新"
+      "updated": "9月21日 21時8分更新"
     },
     "akita": {
       "name": "秋田新幹線",
@@ -25,7 +25,7 @@
       "level": "normal",
       "label": "平常運転",
       "text": "現在､事故･遅延に関する情報はありません。",
-      "updated": "9月21日 18時6分更新"
+      "updated": "9月21日 21時8分更新"
     },
     "yamagata": {
       "name": "山形新幹線",
@@ -33,7 +33,7 @@
       "level": "normal",
       "label": "平常運転",
       "text": "現在､事故･遅延に関する情報はありません。",
-      "updated": "9月21日 18時6分更新"
+      "updated": "9月21日 21時8分更新"
     },
     "joetsu": {
       "name": "上越新幹線",
@@ -41,39 +41,39 @@
       "level": "normal",
       "label": "平常運転",
       "text": "現在､事故･遅延に関する情報はありません。",
-      "updated": "9月21日 18時6分更新"
+      "updated": "9月21日 21時8分更新"
     },
     "hokuriku": {
       "name": "北陸新幹線",
       "url": "https://transit.yahoo.co.jp/diainfo/624/0",
       "level": "trouble",
       "label": "遅延",
-      "text": "敦賀駅での接続待ちの影響で、富山〜敦賀駅間の上り線(富山方面行)の一部列車に遅れが出ています。（9月21日 6時0分掲載）",
-      "updated": "9月21日 18時6分更新"
+      "text": "敦賀駅での接続待ちの影響で、上り線(東京方面行)の一部列車に遅れが出ています。（9月21日 20時40分掲載）",
+      "updated": "9月21日 21時8分更新"
     },
     "tokaido": {
       "name": "東海道新幹線",
       "url": "https://transit.yahoo.co.jp/diainfo/7/0",
-      "level": "trouble",
-      "label": "遅延",
-      "text": "品川〜新横浜駅間での車両点検の影響などで、一部列車に遅れが出ています。（9月21日 16時55分掲載）",
-      "updated": "9月21日 18時6分更新"
+      "level": "normal",
+      "label": "平常運転",
+      "text": "20:15現在、ほぼ平常通り運転しています。（9月21日 20時15分掲載）",
+      "updated": "9月21日 21時8分更新"
     },
     "sanyo": {
       "name": "山陽新幹線",
       "url": "https://transit.yahoo.co.jp/diainfo/8/0",
-      "level": "trouble",
-      "label": "遅延",
-      "text": "東海道新幹線内での車両点検の影響などで、一部列車に遅れが出ています。（9月21日 17時40分掲載）",
-      "updated": "9月21日 18時6分更新"
+      "level": "normal",
+      "label": "平常運転",
+      "text": "20:15現在、ほぼ平常通り運転しています。（9月21日 20時15分掲載）",
+      "updated": "9月21日 21時9分更新"
     },
     "kyushu": {
       "name": "九州新幹線",
       "url": "https://transit.yahoo.co.jp/diainfo/410/0",
-      "level": "trouble",
-      "label": "遅延",
-      "text": "東海道新幹線内での車両点検の影響で、下り線(鹿児島中央方面行)の一部列車に遅れが出ています。（9月21日 14時0分掲載）",
-      "updated": "9月21日 18時6分更新"
+      "level": "suspend",
+      "label": "運休",
+      "text": "地震災害の影響で、一部列車に運休や運転変更が出ています。（9月21日 5時0分掲載）",
+      "updated": "9月21日 21時9分更新"
     },
     "nishikyushu": {
       "name": "西九州新幹線",
@@ -81,7 +81,7 @@
       "level": "normal",
       "label": "平常運転",
       "text": "現在､事故･遅延に関する情報はありません。",
-      "updated": "9月21日 18時6分更新"
+      "updated": "9月21日 21時9分更新"
     }
   }
 }
